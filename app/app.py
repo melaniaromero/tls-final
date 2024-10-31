@@ -94,6 +94,9 @@ def handle_connect():
         connected_users.append(username)
         emit('user_connected', {'username': username}, broadcast=True)
 
+        # Envía la lista completa de usuarios conectados al nuevo usuario
+        emit('update_user_list', {'users': list(connected_users)})
+
 @socketio.on('disconnect')
 def handle_disconnect():
     username = session.get('username')
