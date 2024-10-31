@@ -1,36 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Chat</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const socket = io();
-            const form = document.getElementById('form');
-            const input = document.getElementById('input');
-            const messages = document.getElementById('messages');
-
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                if (input.value) {
-                    socket.send(input.value);
-                    input.value = '';
-                }
-            });
-
-            socket.on('message', (data) => {
-                const item = document.createElement('li');
-                item.textContent = `${data.msg} (Hash: ${data.hash}, Firma: ${data.signature})`;
-                messages.appendChild(item);
-                window.scrollTo(0, document.body.scrollHeight);
-            });
-        });
-    </script>
+    <meta charset="UTF-8">
+    <title>Chat!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #e0f7fa;
+            font-family: Arial, sans-serif;
+            color: #007bb5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border: 1px solid #007bb5;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header, .chat-footer {
+            background-color: #007bb5;
+            color: #ffffff;
+            padding: 10px;
+            text-align: center;
+        }
+        .chat-header {
+            font-size: 1.5em;
+        }
+        .chat-window {
+            flex: 1;
+            padding: 10px;
+            overflow-y: scroll;
+            background-color: #f0f0f0;
+        }
+        .chat-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #e0f7fa;
+            border: 1px solid #007bb5;
+        }
+        .chat-footer {
+            display: flex;
+            align-items: center;
+        }
+        .chat-footer input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #007bb5;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .chat-footer button {
+            background-color: #007bb5;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .chat-footer button:hover {
+            background-color: #005f8a;
+        }
+        .users-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .users-list li {
+            padding: 5px;
+            border-bottom: 1px solid #007bb5;
+        }
+    </style>
 </head>
 <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-        <input id="input" autocomplete="off"><button>Enviar</button>
-    </form>
+    <div class="chat-container">
+        <div class="chat-header">
+            Chatea!
+        </div>
+        <div class="chat-window" id="chatWindow"></div>
+        <div class="chat-footer">
+            <input type="text" id="messageInput" placeholder="Escribe un mensaje">
+            <button type="submit" id="sendButton">Enviar</button>
+        </div>
+    </div>
+    <h3>Usuarios Conectados</h3>
+    <ul class="users-list" id="usersList"></ul>
+
+    <script>
+        const socket = io();
+
+        // Enviar mensaje al servidor
+        document.getElementById('sendButton').addEventListener('click', function(event) {
+            event.preventDefault();
+            const message = document.getElementById('messageInput').value;
+            if (message.trim() !== "") {
+                socket.send(message);
+                document.getElementById('messageInput').value = '';
+            }
+        });
+
+        // Mostrar mensajes recibidos
+        socket.on('message', function(data) {
+            const chatWindow = document.getElementById('chatWindow');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message');
+            messageElement.innerHTML = `
+                <strong>Mensaje de ${data.username}:</strong> ${data.msg} <br>
+                <strong>Cifrado:</strong> ${data.encrypted_msg} <br>
+                <strong>Hash:</strong> ${data.hash} <br>
+                <strong>Firma:</strong> ${data.signature}
+            `;
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+
+        // Manejo de usuario conectado
+        socket.on('user_connected', function(data) {
+            const usersList = document.getElementById('usersList');
+            const userElement = document.createElement('li');
+            userElement.setAttribute('id', `user-${data.username}`);
+            userElement.textContent = data.username;
+            usersList.appendChild(userElement);
+        });
+
+        // Manejo de usuario desconectado
+        socket.on('user_disconnected', function(data) {
+            const userElement = document.getElementById(`user-${data.username}`);
+            if (userElement) {
+                userElement.remove();
+            }
+        });
+    </script>
 </body>
 </html>
