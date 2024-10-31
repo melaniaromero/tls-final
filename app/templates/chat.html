@@ -1,38 +1,36 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Chat Seguro</title>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
-        async function sendMessage() {
-            const message = document.getElementById('message').value;
-            const response = await fetch('/send_message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
-            });
-            const result = await response.json();
-            document.getElementById('chat').innerHTML += `<p><strong>Yo:</strong> ${message}</p>`;
-            document.getElementById('message').value = '';
-        }
-        
-        async function receiveMessage() {
-            const response = await fetch('/receive_message');
-            const result = await response.json();
-            if (result.message) {
-                document.getElementById('chat').innerHTML += `<p><strong>${result.sender}:</strong> ${result.message} <small>${result.verification_status}</small></p>`;
-            }
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+            const form = document.getElementById('form');
+            const input = document.getElementById('input');
+            const messages = document.getElementById('messages');
 
-        setInterval(receiveMessage, 3000);  // Verifica mensajes nuevos cada 3 segundos
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (input.value) {
+                    socket.send(input.value);
+                    input.value = '';
+                }
+            });
+
+            socket.on('message', (data) => {
+                const item = document.createElement('li');
+                item.textContent = `${data.msg} (Hash: ${data.hash}, Firma: ${data.signature})`;
+                messages.appendChild(item);
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+        });
     </script>
 </head>
 <body>
-    <h2>Chat Seguro</h2>
-    <div id="chat" style="border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll;">
-        <!-- Mensajes del chat se mostrarán aquí -->
-    </div>
-    <textarea id="message" rows="3" placeholder="Escribe tu mensaje"></textarea><br>
-    <button onclick="sendMessage()">Enviar</button>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+        <input id="input" autocomplete="off"><button>Enviar</button>
+    </form>
 </body>
 </html>
