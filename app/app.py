@@ -107,6 +107,7 @@ def handle_disconnect():
 @socketio.on('message')
 def handleMessage(msg):
     password = session.get('password')
+    usuario = session.get('username')
     salt = b'salt_'  # Puedes generar un salt aleatorio y guardarlo
     key = PBKDF2(password, salt, dkLen=32)
     cipher = AES.new(key, AES.MODE_EAX)
@@ -120,7 +121,7 @@ def handleMessage(msg):
     signature = pkcs1_15.new(private_key).sign(hashed_msg)
     signature_b64 = base64.b64encode(signature).decode('utf-8')
 
-    send({'msg': msg, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
+    send({'username': usuario, 'msg': msg, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
