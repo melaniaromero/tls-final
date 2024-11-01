@@ -10,7 +10,7 @@ $ pip3 install -r requirements2.txt
 ```
 python .\app\app.py
 ```
-<br />
+
 ### 👉 Set Up for `Unix`, `MacOS` 
 
 > Install modules via `VENV`  
