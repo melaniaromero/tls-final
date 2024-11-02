@@ -18,6 +18,7 @@ socketio = SocketIO(app)
 # Simulación de base de datos
 users = {}
 connected_users = []
+public_key_conected_users = []
 
 @app.route('/')
 def home():
@@ -75,9 +76,10 @@ def generate_keys():
     encrypted_private_key = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
     # Guardar las llaves en archivos
     private_key_path = os.path.join(os.getcwd(), 'private.pem')
+    public_key_path = os.path.join(os.getcwd(), 'public.pem')
     with open(private_key_path, 'wb') as f:
         f.write(private_key)
-    with open(os.path.join(os.getcwd(), 'public.pem'), 'wb') as f:
+    with open(public_key_path, 'wb') as f:
         f.write(public_key)
     return send_file(private_key_path, as_attachment=True)
 
@@ -105,12 +107,16 @@ def handle_disconnect():
         emit('user_disconnected', {'username': username}, broadcast=True)
 
 @socketio.on('message')
-def handleMessage(msg):
+def handleMessage(msg: str):
     password = session.get('password')
     usuario = session.get('username')
+
+    # Generar llave simetrica
     salt = b'salt_'  # Puedes generar un salt aleatorio y guardarlo
-    key = PBKDF2(password, salt, dkLen=32)
-    cipher = AES.new(key, AES.MODE_EAX)
+    key = PBKDF2(password, salt, dkLen=32, count=200000)
+
+    # Cifrar mensaje del usuario con AES
+    cipher = AES.new(key, AES.MODE_GCM)
     ciphertext, tag = cipher.encrypt_and_digest(msg.encode())
     encrypted_msg = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
 
@@ -120,6 +126,33 @@ def handleMessage(msg):
     hashed_msg = SHA256.new(encrypted_msg.encode())
     signature = pkcs1_15.new(private_key).sign(hashed_msg)
     signature_b64 = base64.b64encode(signature).decode('utf-8')
+
+    # Decifrado del mensaje
+
+    public_key_path = os.path.join(os.getcwd(), 'public.pem')
+    public_key = RSA.import_key(open(public_key_path).read())
+    hashed_encrypted_message = SHA256.new(encrypted_msg.encode())
+
+    try:
+        pkcs1_15.new(public_key).verify(hashed_encrypted_message, signature_b64)
+        emit("La firma es valida", broadcast=True)
+    except (ValueError, TypeError):
+        emit("La firma es invalida", broadcast=True)
+        return
+
+    try:
+        encrypted_data = base64.b64decode(encrypted_msg)
+        check_nonce = encrypted_data[:12]
+        check_tag = encrypted_data[12:28]
+        text = encrypted_data[28:]
+        # Comprobar integridad del mensaje
+        cipher2 = AES.new(key, AES.MODE_GCM, nonce=check_nonce)
+        plaintext = cipher2.decrypt_and_verify(text, check_tag).decode('utf-8')
+
+        if (plaintext == msg): emit("El mensaje es integro", broadcast=True)
+    except (ValueError, TypeError):
+        emit("La integridad del mensaje se ha perdido", broadcast=True)
+        return
 
     send({'username': usuario, 'msg': msg, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
 
