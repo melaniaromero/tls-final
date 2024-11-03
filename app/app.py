@@ -160,7 +160,7 @@ def handleMessage(msg):
     signature_b64 = base64.b64encode(signature).decode('utf-8')
 
     send({'username': usuario, 'msg': msg, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
-    
+  
 #Verifica la firma digital usando la clave pública del remitente. 
 # Si la firma es válida, emite un evento de verificación exitosa; de lo contrario, emite un fallo.
 @socketio.on('verify_signature')

@@ -154,6 +154,18 @@
             });
         });
 
+        socket.on('update_user_list', function(data) {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = ''; // Limpiar la lista existente
+
+            data.users.forEach(function(username) {
+                const userElement = document.createElement('li');
+                userElement.setAttribute('id', `user-${username}`);
+                userElement.textContent = username;
+                usersList.appendChild(userElement);
+            });
+        });
+
         // Manejo de usuario conectado
         socket.on('user_connected', function(data) {
             const usersList = document.getElementById('usersList');
