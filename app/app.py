@@ -78,15 +78,18 @@ def generate_keys():
     private_key = key.export_key()  # Exporta la clave privada en formato binario.
     public_key = key.publickey().export_key()  # Exporta la clave pública en formato binario.
     
-    # Cifra la clave privada con AES usando una clave y modo predefinidos (no seguro para producción).
-    cipher = AES.new(b'secretpassword12', AES.MODE_EAX)
+    # Cifra la clave privada con AES usando una clave derivada de la contraseña del usuario.
+    password = session.get('password')  # Recupera la contraseña del usuario.
+    salt = os.urandom(16)  # Genera un salt aleatorio.
+    key_derivation = PBKDF2(password, salt, dkLen=32)  # Deriva una clave simétrica con PBKDF2.
+    cipher = AES.new(key_derivation, AES.MODE_EAX)
     ciphertext, tag = cipher.encrypt_and_digest(private_key)
-    encrypted_private_key = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')  # Codifica en base64.
+    encrypted_private_key = base64.b64encode(salt + cipher.nonce + tag + ciphertext).decode('utf-8')  # Codifica en base64.
 
     # Guarda las claves en archivos locales.
     private_key_path = os.path.join(os.getcwd(), 'private.pem')
     with open(private_key_path, 'wb') as f:
-        f.write(private_key)
+        f.write(encrypted_private_key.encode('utf-8'))
     with open(os.path.join(os.getcwd(), 'public.pem'), 'wb') as f:
         f.write(public_key)
     
