@@ -122,6 +122,24 @@
             `;
             chatWindow.appendChild(messageElement);
             chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Verificar la firma
+            socket.emit('verify_signature', {
+                encrypted_msg: data.encrypted_msg,
+                signature: data.signature
+            });
+        });
+
+        // Mostrar resultado de la verificación de la firma
+        socket.on('signature_verified', function(data) {
+            const chatWindow = document.getElementById('chatWindow');
+            const verificationElement = document.createElement('div');
+            verificationElement.classList.add('chat-message');
+            verificationElement.innerHTML = `
+                <strong>Verificación de firma:</strong> ${data.message}
+            `;
+            chatWindow.appendChild(verificationElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         });
 
         socket.on('update_user_list', function(data) {
