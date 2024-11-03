@@ -148,7 +148,7 @@ def handleMessage(msg):
     usuario = session.get('username')
     salt = b'salt_'  # Puedes generar un salt aleatorio y guardarlo
     key = PBKDF2(password, salt, dkLen=32)
-    cipher = AES.new(key, AES.MODE_EAX)
+    cipher = AES.new(key, AES.MODE_GCM)
     ciphertext, tag = cipher.encrypt_and_digest(msg.encode())
     encrypted_msg = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
 
@@ -159,7 +159,23 @@ def handleMessage(msg):
     signature = pkcs1_15.new(private_key).sign(hashed_msg)
     signature_b64 = base64.b64encode(signature).decode('utf-8')
 
-    send({'username': usuario, 'msg': msg, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
+    # Descifrar el mensaje
+    # Como el mensaje encriptado es la suma del nonce + tag + texto cifrado
+    # Se debe separar cada bloque para desencriptar el mensaje
+    # Los primeros 16 bytes son del nonce, los otros 16 del tag y el resto del mensaje cifrado
+    encrypted_data = base64.b64decode(encrypted_msg)
+    check_nonce = encrypted_data[:16]
+    check_tag = encrypted_data[16:32]
+    text = encrypted_data[32:]
+
+    # Comprobar integridad del mensaje
+    cipher2 = AES.new(key, AES.MODE_GCM, nonce=check_nonce)
+    try:
+        # Si el mensaje es integro y correcto se coloca en el chat, sino manda un error a consola
+        plaintext = cipher2.decrypt_and_verify(text, check_tag).decode()
+        send({'username': usuario, 'msg': plaintext, 'encrypted_msg': encrypted_msg, 'hash': hashed_msg.hexdigest(), 'signature': signature_b64}, broadcast=True)
+    except ValueError:
+        print("Error")
   
 #Verifica la firma digital usando la clave pública del remitente. 
 # Si la firma es válida, emite un evento de verificación exitosa; de lo contrario, emite un fallo.
