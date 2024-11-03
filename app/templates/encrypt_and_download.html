@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Descargar Clave Privada</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <h2>Descargar Clave Privada</h2>
+    <p>Introduce una contraseña para proteger tu clave privada antes de descargarla:</p>
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="encryptAndDownload()">Descargar Clave Privada Cifrada</button>
+
+    <script>
+        const privateKey = `{{ private_key }}`;
+
+        function encryptAndDownload() {
+            const password = document.getElementById("password").value;
+            if (!password) {
+                alert("Por favor, introduce una contraseña.");
+                return;
+            }
+
+            console.log("Contraseña ingresada:", password);
+
+            // Generar salt y derivar clave
+            const salt = CryptoJS.lib.WordArray.random(16);
+            const key = CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 1000 });
+            console.log("Salt (base64):", CryptoJS.enc.Base64.stringify(salt));
+            console.log("Clave derivada (base64):", CryptoJS.enc.Base64.stringify(key));
+
+            // Generar nonce (iv) de 8 bytes (64 bits) para el modo CTR
+            const iv = CryptoJS.lib.WordArray.random(8);
+            const encrypted = CryptoJS.AES.encrypt(privateKey, key, { iv: iv, mode: CryptoJS.mode.CTR });
+
+            // Obtener el ciphertext en base64
+            const ciphertext = encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+            console.log("Ciphertext (base64):", ciphertext);
+            console.log("IV (base64):", CryptoJS.enc.Base64.stringify(iv));
+
+            // Formato PEM para almacenar los datos en un solo archivo
+            const pemHeader = "-----BEGIN ENCRYPTED PRIVATE KEY-----\n";
+            const pemFooter = "\n-----END ENCRYPTED PRIVATE KEY-----";
+            const pemContent = pemHeader +
+                CryptoJS.enc.Base64.stringify(salt) + "\n" +  // Salt en base64
+                CryptoJS.enc.Base64.stringify(iv) + "\n" +    // IV en base64
+                ciphertext + pemFooter;                       // Ciphertext en base64
+
+            // Crear y descargar el archivo .pem
+            const blob = new Blob([pemContent], { type: 'application/x-pem-file' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "private.pem";
+            link.click();
+
+            // Redirigir al usuario a la página de subida después de la descarga
+            setTimeout(() => {
+                window.location.href = "{{ url_for('upload_key') }}";
+            }, 20000);
+        }
+    </script>
+</body>
+</html>

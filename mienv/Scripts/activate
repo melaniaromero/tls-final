@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\melan\Downloads\tls-final\mienv"
+VIRTUAL_ENV="D:\aldo\Documents\Facultad de Ingenieria\11vo Semestre\Criptografía\Proyecto 1\tls-final\mienv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
