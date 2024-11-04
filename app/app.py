@@ -15,7 +15,6 @@ import base64
 from flask_socketio import SocketIO, send, emit
 import hashlib
 import hmac
-import zipfile
 # Crea una instancia de Flask llamada app 
 # Establece una clave secreta para la sesión
 # Configura SocketIO para manejar conexiones en tiempo real
@@ -104,15 +103,7 @@ def generate_keys():
         f.write(private_key)
     with open(public_key_path, 'wb') as f:
         f.write(public_key)
-    # Crear un zip para encapsular ambas llaves
-    zip_path = os.path.join(os.getcwd(), 'llaves.zip')
-    with zipfile.ZipFile(zip_path, 'w') as zipf:
-        zipf.write(private_key_path, 'private.pem')
-        zipf.write(public_key_path, 'public.pem')
-    # Limpiar archivos auxiliares para las llaves
-    os.remove(private_key_path)
-    os.remove(public_key_path)
-    return send_file(zip_path, as_attachment=True)
+    return send_file(private_key_path, as_attachment=True)
 
 #Muestra  chat.html si el usuario está en la sesión. Si no, redirige a login.
 @app.route('/chat')
@@ -161,17 +152,11 @@ def handleMessage(msg):
     ciphertext, tag = cipher.encrypt_and_digest(msg.encode())
     encrypted_msg = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
 
-    # Se leen las llaves del zip descargado en la generacion de llaves
-    zip_path = os.path.join(os.getcwd(), 'llaves.zip')
-    with zipfile.ZipFile(zip_path, 'r') as zipf:
-        zipf.extractall('extracted_keys')
-    private_key_path = os.path.join('extracted_keys', 'private.pem')
-
     # Crear firma digital
     passphrase = "tr%&'w;N;t~n`Q4.Xy5RL}mg>|EHXt}7x!2Q6Z.|{X_#C/,EFk.Bq]XH"
+    private_key_path = os.path.join(os.getcwd(), 'private.pem')
     with open(private_key_path, 'rb') as f:
         private_key = RSA.import_key(f.read(), passphrase=passphrase)
-    #private_key = RSA.import_key(open(private_key_path).read())
     hashed_msg = SHA256.new(encrypted_msg.encode())
     signature = pkcs1_15.new(private_key).sign(hashed_msg)
     signature_b64 = base64.b64encode(signature).decode('utf-8')
@@ -198,14 +183,8 @@ def handleMessage(msg):
 # Si la firma es válida, emite un evento de verificación exitosa; de lo contrario, emite un fallo.
 @socketio.on('verify_signature')
 def verify_signature(data):
-    # Se leen las llaves del zip descargado en la generacion de llaves
-    zip_path = os.path.join(os.getcwd(), 'llaves.zip')
-    with zipfile.ZipFile(zip_path, 'r') as zipf:
-        zipf.extractall('extracted_keys')
-    sender_public_key_path = os.path.join('extracted_keys', 'public.pem')
-    with open(sender_public_key_path, 'rb') as f:
-        sender_public_key = RSA.import_key(f.read())
-    #Verificar la firma digital
+    sender_public_key_path = os.path.join(os.getcwd(), 'public.pem')
+    sender_public_key = RSA.import_key(open(sender_public_key_path).read())
     hashed_msg = SHA256.new(data['encrypted_msg'].encode())
     signature = base64.b64decode(data['signature'])
     try:
