@@ -152,6 +152,14 @@ def handleMessage(msg):
     ciphertext, tag = cipher.encrypt_and_digest(msg.encode())
     encrypted_msg = base64.b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
 
+    # Encrypt the symmetric key using the recipient's public RSA key
+    recipient_public_key_path = 'public.pem' 
+    with open(recipient_public_key_path, 'rb') as f: 
+        recipient_public_key = RSA.import_key(f.read()) 
+    cipher_rsa = PKCS1_OAEP.new(recipient_public_key) 
+    encrypted_symmetric_key = base64.b64encode(cipher_rsa.encrypt(key)).decode('utf-8') 
+    print(encrypted_symmetric_key)
+    
     # Crear firma digital
     passphrase = "tr%&'w;N;t~n`Q4.Xy5RL}mg>|EHXt}7x!2Q6Z.|{X_#C/,EFk.Bq]XH"
     private_key_path = os.path.join(os.getcwd(), 'private.pem')
@@ -169,6 +177,13 @@ def handleMessage(msg):
     check_nonce = encrypted_data[:16]
     check_tag = encrypted_data[16:32]
     text = encrypted_data[32:]
+
+    recipient_private_key_path = 'private.pem' 
+    with open(recipient_private_key_path, 'rb') as f: 
+        recipient_private_key = RSA.import_key(f.read(), passphrase=passphrase) 
+        cipher_rsa = PKCS1_OAEP.new(recipient_private_key) 
+        decrypted_symmetric_key = cipher_rsa.decrypt(base64.b64decode(encrypted_symmetric_key))
+
 
     # Comprobar integridad del mensaje
     cipher2 = AES.new(key, AES.MODE_GCM, nonce=check_nonce)
