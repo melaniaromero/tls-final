@@ -11,7 +11,7 @@ $ pip3 install -r requirements2.txt
 python .\app\app.py
 ```
 
-### 👉 Set Up for `Unix`, `MacOS` 
+### 👉 Manual build for `Unix`, `MacOS` 
 
 > Install modules via `VENV`  
 
@@ -33,6 +33,36 @@ $ flask run
 ```
 
 
+<br />
+
+At this point, the app runs at `http://127.0.0.1:5000/`. 
+
+<br />
+
+### 👉 Set up for `Unix`, `MacOS` with scripts 
+
+> change file permissions `.sh`  
+
+```bash
+$ chmod 755 install.sh
+$ chmod 755 run.sh
+```
+
+<br />
+
+> run script with sudo
+
+
+```
+$ sudo ./install.sh
+```
+
+> run script
+
+
+```
+$ source ./run.sh
+```
 <br />
 
 At this point, the app runs at `http://127.0.0.1:5000/`. 

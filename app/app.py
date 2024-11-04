@@ -132,13 +132,13 @@ def handle_disconnect():
 
 #Al recibir un mensaje privado, calcula un hash y una firma HMAC. 
 #Envía el mensaje, el hash y la firma al destinatario.
-@socketio.on('private_message')
-def handle_private_message(data):
-    recipient_session_id = connected_users.get(data['to'])
-    if recipient_session_id:
-        hashed_msg = hashlib.sha256(data['msg'].encode()).hexdigest()
-        signature = hmac.new(b'secretkey', data['msg'].encode(), hashlib.sha256).hexdigest()
-        emit('message', {'from': session['username'], 'msg': data['msg'], 'encrypted_msg': data['msg'], 'hash': hashed_msg, 'signature': signature}, room=recipient_session_id)
+#@socketio.on('private_message')
+#def handle_private_message(data):
+#    recipient_session_id = connected_users.get(data['to'])
+#    if recipient_session_id:
+#        hashed_msg = hashlib.sha256(data['msg'].encode()).hexdigest()
+#        signature = hmac.new(b'secretkey', data['msg'].encode(), hashlib.sha256).hexdigest()
+#        emit('message', {'from': session['username'], 'msg': data['msg'], 'encrypted_msg': data['msg'], 'hash': hashed_msg, 'signature': signature}, room=recipient_session_id)
 #Cifra el mensaje usando AES con una clave derivada de la contraseña
 # y luego firma el mensaje cifrado. Envía el mensaje y su firma.
 @socketio.on('message')
