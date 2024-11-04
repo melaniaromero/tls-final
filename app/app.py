@@ -178,6 +178,8 @@ def handleMessage(msg):
     check_tag = encrypted_data[16:32]
     text = encrypted_data[32:]
 
+    #Descifrar la llave simetrica
+
     recipient_private_key_path = 'private.pem' 
     with open(recipient_private_key_path, 'rb') as f: 
         recipient_private_key = RSA.import_key(f.read(), passphrase=passphrase) 

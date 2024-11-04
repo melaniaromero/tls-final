@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat!</title>
+    <!--links to external resources like the Socket.IO library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <!--body syling, chat container, chat header and footer, chat window
+    chat message and the user list-->
     <style>
         body {
             background-color: #e0f7fa;
@@ -97,9 +100,12 @@
     <ul class="users-list" id="usersList"></ul>
 
     <script>
+        //Socket.IO initialization: Initializes the Socket.IO client.
         const socket = io();
 
-        // Enviar mensaje al servidor
+
+        // Send message: Adds an event listener
+        // to the send button to send a message to the server when clicked.
         document.getElementById('sendButton').addEventListener('click', function(event) {
             event.preventDefault();
             const message = document.getElementById('messageInput').value;
@@ -109,7 +115,8 @@
             }
         });
 
-        // Mostrar mensajes recibidos
+        // Listens for 'message' events from the 
+        //server and displays the received messages in the chat window
         socket.on('message', function(data) {
             const chatWindow = document.getElementById('chatWindow');
             const messageElement = document.createElement('div');
@@ -123,14 +130,16 @@
             chatWindow.appendChild(messageElement);
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
-            // Verificar la firma
+            // Emits a 'verify_signature' event to the server 
+            //to verify the digital signature of the received message
             socket.emit('verify_signature', {
                 encrypted_msg: data.encrypted_msg,
                 signature: data.signature
             });
         });
 
-        // Mostrar resultado de la verificación de la firma
+        // Listens for 'signature_verified' events from 
+        // the server and displays the verification result in the chat window.
         socket.on('signature_verified', function(data) {
             const chatWindow = document.getElementById('chatWindow');
             const verificationElement = document.createElement('div');
@@ -141,43 +150,35 @@
             chatWindow.appendChild(verificationElement);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         });
-
+        //Update the user list when the 'update_user_list' event is received
+        //The code iterates through the list of users provided 
+        //in the data object and creates a new list item (li) for each user.
         socket.on('update_user_list', function(data) {
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = ''; // Limpiar la lista existente
-
+            //Iterate through the list of users and create a list item for each user
             data.users.forEach(function(username) {
                 const userElement = document.createElement('li');
-                userElement.setAttribute('id', `user-${username}`);
+                userElement.setAttribute('id', `user-${username}`);//Each list item is given an id attribute based on the username and the text content is set to the username.
                 userElement.textContent = username;
-                usersList.appendChild(userElement);
+                usersList.appendChild(userElement); //The list item is appended to the usersList element.
             });
         });
 
-        socket.on('update_user_list', function(data) {
-            const usersList = document.getElementById('usersList');
-            usersList.innerHTML = ''; // Limpiar la lista existente
-
-            data.users.forEach(function(username) {
-                const userElement = document.createElement('li');
-                userElement.setAttribute('id', `user-${username}`);
-                userElement.textContent = username;
-                usersList.appendChild(userElement);
-            });
-        });
-
-        // Manejo de usuario conectado
+         // Handle user connections
         socket.on('user_connected', function(data) {
             const usersList = document.getElementById('usersList');
-            const userElement = document.createElement('li');
+            const userElement = document.createElement('li');//A new list item (li) is created for the connected user.
             userElement.setAttribute('id', `user-${data.username}`);
             userElement.textContent = data.username;
             usersList.appendChild(userElement);
         });
 
-        // Manejo de usuario desconectado
+        // Handle user disconnections
         socket.on('user_disconnected', function(data) {
+            //The list item corresponding to the disconnected user is found using the id attribute.
             const userElement = document.getElementById(`user-${data.username}`);
+            //If the list item exists, it is removed from the usersList element
             if (userElement) {
                 userElement.remove();
             }
