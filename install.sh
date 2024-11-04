@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Date: 03/11/2024
+# Author: Ricardo Vega
+# This script download ans install
+# python3 and pip3 if necessary
+
+echo "Hi ${USER} !!!"
+
+if ! command -v nano2 &>/dev/null || command -v nano3 &>/dev/null; then
+    read -p "Quieres instalar python3 y pip3? Y/n: " sn
+    if [[ "${sn}" == "y" || "${sn}" == "Y" ]]; then
+        apt-get install python3
+        apt-get install python3-pip
+    fi
+fi
